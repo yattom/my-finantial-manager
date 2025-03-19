@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "financial-manager-backend"
+version = "0.1.0"
+description = "個人向け金融資産マネジメントシステムのバックエンド"
+authors = ["Your Name <your.email@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.11"
+uvicorn = "^0.34.0"
+pydantic = "^2.10.6"
+sqlalchemy = "^2.0.39"
+aiosqlite = "^0.21.0"
+python-multipart = "^0.0.20"
+python-jose = "^3.4.0"
+passlib = "^1.7.4"
+bcrypt = "^4.3.0"
+httpx = "^0.28.1"
+yfinance = "^0.2.54"
+pandas = "^2.2.3"
+numpy = "^2.2.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-asyncio = "^0.25.3"
+black = "^25.1.0"
+isort = "^6.0.1"
+flake8 = "^7.1.2"
+mypy = "^1.15.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
