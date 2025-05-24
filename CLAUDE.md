@@ -2,23 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Environment Setup
+
+### Prerequisites
+1. Install Poetry for Python dependency management:
+```bash
+pip install poetry
+```
+
+2. Ensure Node.js and npm are installed for frontend development.
+
+### Initial Setup
+1. Install backend dependencies:
+```bash
+cd backend
+poetry install
+mkdir -p data  # Create directory for SQLite database
+```
+
+2. Install frontend dependencies:
+```bash
+cd frontend
+npm install
+```
+
 ## Development Commands
 
 ### Local Development
 **Frontend (Next.js):**
 ```bash
 cd frontend
-npm install
 npm run dev  # Starts development server on http://localhost:3000
 npm run build  # Build for production
 npm run lint  # ESLint checks
-npm test  # Run Jest tests
+npm test -- --passWithNoTests  # Run Jest tests (currently no test files)
 ```
 
 **Backend (FastAPI):**
 ```bash
 cd backend
-poetry install
 poetry run uvicorn app.main:app --reload  # Starts API server on http://localhost:8000
 poetry run pytest  # Run tests
 poetry run black .  # Format code
@@ -37,6 +59,11 @@ docker-compose down  # Stop services
 - Frontend: `npm test` for Jest tests
 - Backend: `poetry run pytest` for Python tests
 - Backend linting: `poetry run black . && poetry run isort . && poetry run flake8 && poetry run mypy .`
+
+**IMPORTANT: Always run tests before pushing code to the repository**
+- Run `cd backend && poetry run pytest` to verify backend tests pass
+- Run `cd frontend && npm test` to verify frontend tests pass
+- Only push code after confirming all tests are green
 
 ## Architecture Overview
 
