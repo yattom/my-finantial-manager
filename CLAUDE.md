@@ -56,14 +56,45 @@ docker-compose down  # Stop services
 ```
 
 ### Testing and Quality
-- Frontend: `npm test` for Jest tests
+- Frontend Unit Tests: `npm test` for Jest tests
+- Frontend E2E Tests: `npm run test:e2e` for Playwright tests
 - Backend: `poetry run pytest` for Python tests
 - Backend linting: `poetry run black . && poetry run isort . && poetry run flake8 && poetry run mypy .`
 
 **IMPORTANT: Always run tests before pushing code to the repository**
 - Run `cd backend && poetry run pytest` to verify backend tests pass
-- Run `cd frontend && npm test` to verify frontend tests pass
+- Run `cd frontend && npm test` to verify frontend unit tests pass
+- Run `cd frontend && npm run test:e2e` to verify e2e tests pass
 - Only push code after confirming all tests are green
+
+### E2E Testing with Playwright
+The frontend includes comprehensive end-to-end tests located in `frontend/tests/e2e/`:
+
+**Prerequisites for E2E tests:**
+```bash
+cd frontend
+npm install  # Install Playwright
+npx playwright install  # Install browsers
+```
+
+**Running E2E tests:**
+```bash
+cd frontend
+npm run test:e2e          # Run all e2e tests headless
+npm run test:e2e:ui       # Run with interactive UI (recommended for development)
+npm run test:e2e:headed   # Run with visible browser
+```
+
+**E2E Test Coverage:**
+- Dashboard navigation and functionality
+- Portfolio management and asset display
+- Asset addition form and validation
+- Performance analysis with charts and filters
+- Price update functionality
+- Complete user workflows and data persistence
+- Error handling and edge cases
+
+**Note:** E2E tests require both frontend and backend services to be running. Use `docker-compose up -d` or start services manually before running tests.
 
 ## Architecture Overview
 
@@ -119,3 +150,50 @@ The backend exposes RESTful endpoints:
 - Backend uses async/await patterns with SQLAlchemy async operations
 - Frontend includes fallback dummy data for development when API calls fail
 - Code is primarily commented in Japanese as this is a Japanese financial management system
+
+## Testing and Discovery Workflow
+
+### Manual Testing via Playwright MCP
+When exploring functionality or investigating issues, use this workflow:
+
+1. **Operate the app via Playwright MCP**
+   ```bash
+   # Start the browser automation
+   mcp__playwright__browser_navigate to http://localhost:3000
+   mcp__playwright__browser_click on elements
+   mcp__playwright__browser_take_screenshot for documentation
+   ```
+
+2. **Find something interesting/problematic**
+   - UI behavior that doesn't match expectations
+   - Missing functionality
+   - Performance issues
+   - Data validation gaps
+
+3. **Research how it's handled in the code**
+   - Use Grep/Glob tools to find relevant files
+   - Read the implementation to understand current behavior
+   - Identify root causes or missing implementations
+
+4. **Take notes and document findings**
+   - Document the discovery in comments or markdown
+   - Identify what should be improved or implemented
+
+5. **Update TODO in docs/plan.md**
+   - Add specific actionable items to the appropriate priority section
+   - Include context about current state vs. desired state
+   - Note any technical blockers or dependencies
+
+### Example Workflow Applied
+This workflow was used to discover the time period data validation gap:
+1. **Operated** performance page via Playwright MCP
+2. **Found** that time period buttons work but data doesn't visibly change
+3. **Researched** the frontend code to understand current implementation
+4. **Noted** the gap between UI functionality and business logic validation
+5. **Updated** plan.md with specific TODO for data validation testing
+
+### Benefits of This Workflow
+- **Systematic discovery**: Ensures issues are properly investigated
+- **Documentation**: Creates audit trail of discoveries and decisions
+- **Actionable outcomes**: Converts discoveries into planned work
+- **Knowledge retention**: Preserves understanding for future development
