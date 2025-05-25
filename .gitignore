@@ -58,6 +58,13 @@ data/
 .docker/
 docker-compose.override.yml
 
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+
+# Claude Code
+.claude/
+
 # その他
 .DS_Store
 Thumbs.db
