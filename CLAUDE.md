@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Guidelines
+
+When updating README.md or other user-facing documentation:
+
+**DO:**
+- Provide factual, actionable information
+- Document what exists and how to use it
+- Use clear, straightforward commands and instructions
+- Keep content minimal and focused on what users need to know
+
+**DON'T:**
+- Add evaluative content ("comprehensive," "recommended," "better")
+- Include subjective assessments or promotional language
+- Add benefits/advantages lists unless specifically requested
+- Include detailed metrics, test counts, or coverage statistics
+- Use phrases like "推奨" (recommended), "利点" (advantages), etc.
+
+**Example:**
+- ❌ "このプロジェクトには包括的なテストスイートが含まれています"
+- ✅ Just document the test commands
+
+CLAUDE.md (this file) can include evaluative guidance for developers, but user-facing docs should remain objective.
+
 ## Development Environment Setup
 
 ### Prerequisites
@@ -53,36 +76,71 @@ poetry run mypy .  # Type checking
 ```bash
 docker-compose up -d  # Start both services
 docker-compose down  # Stop services
+docker-compose ps     # Check service status
 ```
 
 ### Testing and Quality
-- Frontend Unit Tests: `npm test` for Jest tests
-- Frontend E2E Tests: `npm run test:e2e` for Playwright tests
-- Backend: `poetry run pytest` for Python tests
-- Backend linting: `poetry run black . && poetry run isort . && poetry run flake8 && poetry run mypy .`
 
-**IMPORTANT: Always run tests before pushing code to the repository**
-- Run `cd backend && poetry run pytest` to verify backend tests pass
-- Run `cd frontend && npm test` to verify frontend unit tests pass
-- Run `cd frontend && npm run test:e2e` to verify e2e tests pass
-- Only push code after confirming all tests are green
+#### Unit Tests
+- **Frontend Unit Tests (Jest)**: `cd frontend && npm test`
+  - Currently configured with TypeScript support via ts-jest
+  - Playwright E2E tests are excluded from Jest runs
+  - Jest config: `frontend/jest.config.js`
+- **Backend Tests (pytest)**: `cd backend && poetry run pytest`
+- **Backend Linting**: `cd backend && poetry run black . && poetry run isort . && poetry run flake8 && poetry run mypy .`
 
-### E2E Testing with Playwright
-The frontend includes comprehensive end-to-end tests located in `frontend/tests/e2e/`:
+#### E2E Testing with Playwright (Recommended Approach)
 
-**Prerequisites for E2E tests:**
+**The frontend includes comprehensive end-to-end tests** located in `frontend/tests/e2e/`:
+
+**Setup (One-time):**
 ```bash
 cd frontend
-npm install  # Install Playwright
-npx playwright install  # Install browsers
+npm install              # Install Playwright dependencies
+npx playwright install   # Install browser binaries
 ```
 
-**Running E2E tests:**
+**Running E2E Tests - Docker Method (Recommended):**
+
+This approach runs frontend and backend services in Docker containers, while Playwright tests run on the host machine:
+
 ```bash
+# Step 1: Start services in Docker (from project root)
+docker-compose up -d
+
+# Verify services are running
+docker-compose ps
+# Backend should be at: http://localhost:8000
+# Frontend should be at: http://localhost:3000
+
+# Step 2: Run E2E tests from frontend directory
 cd frontend
-npm run test:e2e          # Run all e2e tests headless
-npm run test:e2e:ui       # Run with interactive UI (recommended for development)
-npm run test:e2e:headed   # Run with visible browser
+npm run test:e2e              # Run all tests, all browsers (headless)
+npm run test:e2e:ui           # Interactive UI mode (recommended for development)
+npm run test:e2e:headed       # Run with visible browser
+npm run test:e2e -- --project=chromium  # Run only Chromium tests
+
+# Step 3: Stop services when done
+cd ..
+docker-compose down
+```
+
+**Advantages of Docker Method:**
+- ✅ Consistent environment (same as production)
+- ✅ Isolated dependencies (no need to install backend tools on host)
+- ✅ Fast test execution (Playwright runs natively on host)
+- ✅ Easy debugging (can use Playwright UI mode and browser DevTools)
+- ✅ Simple setup: just `docker-compose up -d` and run tests
+
+**Alternative: Manual Service Start:**
+```bash
+# Terminal 1 - Backend
+cd backend
+poetry run uvicorn app.main:app --reload
+
+# Terminal 2 - Frontend (auto-started by Playwright)
+cd frontend
+npm run test:e2e
 ```
 
 **E2E Test Coverage:**
@@ -93,8 +151,37 @@ npm run test:e2e:headed   # Run with visible browser
 - Price update functionality
 - Complete user workflows and data persistence
 - Error handling and edge cases
+- **Total: 73 tests across 6 test files, running on 3 browsers (219 total test runs)**
 
-**Note:** E2E tests require both frontend and backend services to be running. Use `docker-compose up -d` or start services manually before running tests.
+**Playwright Configuration:**
+- Auto-starts frontend dev server if not running
+- Reuses existing server when available
+- Captures screenshots on test failures
+- Records videos on test failures
+- Generates HTML reports with all failure artifacts
+
+#### Pre-Push Testing Checklist
+
+**IMPORTANT: Always run tests before pushing code to the repository**
+
+```bash
+# 1. Start services
+docker-compose up -d
+
+# 2. Run backend tests
+cd backend && poetry run pytest
+
+# 3. Run frontend unit tests
+cd ../frontend && npm test
+
+# 4. Run e2e tests
+npm run test:e2e
+
+# 5. Stop services
+cd .. && docker-compose down
+
+# Only push code after confirming all tests are green ✅
+```
 
 ## Architecture Overview
 

@@ -72,18 +72,55 @@ FastAPI の自動生成された API ドキュメントは以下の URL で確�
 
 ## テスト
 
-### バックエンドのテスト
+### E2Eテスト
 
+**セットアップ:**
+```bash
+cd frontend
+npm install
+npx playwright install
+```
+
+**Docker使用時の実行方法:**
+
+```bash
+# サービスを起動
+docker-compose up -d
+
+# E2Eテストを実行
+cd frontend
+npm run test:e2e              # 全テスト、全ブラウザ（ヘッドレス）
+npm run test:e2e:ui           # インタラクティブUIモード
+npm run test:e2e:headed       # ブラウザを表示して実行
+npm run test:e2e -- --project=chromium  # Chromiumのみ実行
+
+# サービスを停止
+cd ..
+docker-compose down
+```
+
+### ユニットテスト
+
+**フロントエンド（Jest）:**
+```bash
+cd frontend
+npm test
+```
+
+**バックエンド（pytest）:**
 ```bash
 cd backend
 poetry run pytest
 ```
 
-### フロントエンドのテスト
+### すべてのテストを実行
 
 ```bash
-cd frontend
-npm test
+docker-compose up -d
+cd backend && poetry run pytest
+cd ../frontend && npm test
+npm run test:e2e
+cd .. && docker-compose down
 ```
 
 ## ディレクトリ構造
@@ -95,12 +132,21 @@ my-financial-manager/
 │   ├── package.json         # 依存関係
 │   ├── tsconfig.json        # TypeScript設定
 │   ├── next.config.js       # Next.js設定
-│   └── src/                 # ソースコード
-│       ├── pages/           # ページコンポーネント
-│       ├── components/      # 再利用可能なコンポーネント
-│       ├── styles/          # スタイル
-│       ├── api/             # APIクライアント
-│       └── types/           # 型定義
+│   ├── jest.config.js       # Jest設定（ユニットテスト）
+│   ├── playwright.config.ts # Playwright設定（E2Eテスト）
+│   ├── pages/               # ページコンポーネント
+│   ├── components/          # 再利用可能なコンポーネント
+│   ├── styles/              # スタイル
+│   └── tests/
+│       └── e2e/             # Playwrightテスト（73テスト）
+│           ├── 01-dashboard.spec.ts      # ダッシュボードテスト
+│           ├── 02-portfolio.spec.ts      # ポートフォリオテスト
+│           ├── 03-asset-addition.spec.ts # 資産追加テスト
+│           ├── 04-performance.spec.ts    # パフォーマンステスト
+│           ├── 05-price-update.spec.ts   # 価格更新テスト
+│           ├── 06-integration.spec.ts    # 統合テスト
+│           ├── test-utils.ts             # テストユーティリティ
+│           └── README.md                 # テストドキュメント
 ├── backend/                 # FastAPIバックエンド
 │   ├── Dockerfile           # バックエンドのDockerfile
 │   ├── pyproject.toml       # Poetry依存関係
@@ -110,8 +156,11 @@ my-financial-manager/
 │   │   ├── models.py        # データモデル
 │   │   ├── schemas.py       # Pydanticスキーマ
 │   │   └── crud.py          # CRUDロジック
-│   └── tests/               # テスト
+│   └── tests/               # バックエンドテスト
+├── docs/                    # プロジェクトドキュメント
+│   └── plan.md              # 開発計画
 ├── docker-compose.yml       # Docker Compose設定
+├── CLAUDE.md                # Claude Code開発ガイド
 └── README.md                # プロジェクト説明
 ```
 
