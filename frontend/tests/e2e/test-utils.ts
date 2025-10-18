@@ -29,7 +29,10 @@ export class TestUtils {
    * Navigate to asset addition page from any page
    */
   async navigateToAssetAdd() {
-    await this.page.getByRole('button', { name: '資産を追加' }).click();
+    // Only navigate if not already on the asset addition page
+    if (!this.page.url().includes('/assets/add')) {
+      await this.page.getByRole('button', { name: '資産を追加' }).click();
+    }
     await expect(this.page).toHaveURL('/assets/add');
     await expect(this.page).toHaveTitle('資産追加 | 金融資産マネジメントシステム');
   }
@@ -72,7 +75,9 @@ export class TestUtils {
     quantity: number;
     price: number;
   }) {
-    await this.navigateToAssetAdd();
+    if (this.page.url() !== '/assets/add') {
+      await this.navigateToAssetAdd();
+    }
     
     // Add timestamp to name to make it unique
     const uniqueName = `${asset.name}_${Date.now()}`;

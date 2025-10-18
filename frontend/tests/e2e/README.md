@@ -163,7 +163,9 @@ The tests are configured to:
 - Support multiple browsers (Chromium, Firefox, Safari)
 - Automatically start the dev server if not running
 - Generate HTML reports
-- Capture traces on test failures
+- **Capture screenshots on test failures**
+- **Record videos on test failures**
+- Capture traces on test retries
 
 ## Writing New Tests
 
@@ -180,9 +182,13 @@ When adding new tests:
 
 1. **Use UI Mode**: `npm run test:e2e:ui` provides a great visual debugging experience
 2. **Use Debug Mode**: `npx playwright test --debug` allows step-by-step debugging
-3. **Screenshots**: Tests automatically capture screenshots on failure
-4. **Console Logs**: Check browser console for JavaScript errors
-5. **Network Tab**: Monitor API calls in the Playwright trace viewer
+3. **Failure Artifacts**: Tests automatically capture on failure:
+   - **Screenshots**: Visual state when test failed
+   - **Videos**: Full test execution recording
+   - **Traces**: Interactive timeline (on retry)
+4. **View HTML Report**: `npx playwright show-report` to see all artifacts
+5. **Console Logs**: Check browser console for JavaScript errors
+6. **Network Tab**: Monitor API calls in the Playwright trace viewer
 
 ## Best Practices
 
