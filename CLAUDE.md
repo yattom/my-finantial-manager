@@ -193,7 +193,9 @@ This is a personal financial asset management system built with a React/Next.js 
 - **schemas.py**: Pydantic models for request/response validation
 - **crud.py**: Database operations layer (CRUD functions)
 - **database.py**: SQLAlchemy database connection and session management
-- Uses SQLite3 database stored in `/app/data` volume
+- Uses SQLite3 database with separate instances for different environments:
+  - **`./data/financial_manager.db`**: Used by Docker containers (testing/E2E)
+  - **`./backend/data/financial_manager.db`**: Used for local development
 
 ### Frontend Architecture (Next.js + TypeScript)
 - **Pages Router**: Uses Next.js pages directory structure
