@@ -113,15 +113,47 @@ cd backend
 poetry run pytest
 ```
 
+### コード品質チェック
+
+**バックエンド:**
+```bash
+cd backend
+poetry run black .        # コードフォーマット
+poetry run isort .        # インポート整理
+poetry run flake8         # リンティング
+poetry run mypy .         # 型チェック
+```
+
+**フロントエンド:**
+```bash
+cd frontend
+npm run lint              # ESLint
+npm run build             # 本番ビルド確認
+```
+
 ### すべてのテストを実行
 
 ```bash
+# 1. サービスを起動
 docker-compose up -d
+
+# 2. バックエンドテストを実行
 cd backend && poetry run pytest
+
+# 3. フロントエンドユニットテストを実行
 cd ../frontend && npm test
+
+# 4. E2Eテストを実行
 npm run test:e2e
+
+# 5. サービスを停止
 cd .. && docker-compose down
 ```
+
+**注意:** テストが失敗した場合、Playwrightは自動的に以下を生成します:
+- スクリーンショット（`frontend/test-results/`）
+- ビデオ録画（失敗時のみ）
+- HTMLレポート（`npx playwright show-report`で表示可能）
 
 ## ディレクトリ構造
 
