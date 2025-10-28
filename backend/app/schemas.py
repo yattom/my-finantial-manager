@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, Any
 from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict
+
 
 # 資産スキーマ
 class AssetBase(BaseModel):
@@ -11,8 +13,10 @@ class AssetBase(BaseModel):
     purchase_price: float
     purchase_date: date
 
+
 class AssetCreate(AssetBase):
     pass
+
 
 class AssetUpdate(BaseModel):
     name: Optional[str] = None
@@ -23,6 +27,7 @@ class AssetUpdate(BaseModel):
     purchase_date: Optional[date] = None
     current_price: Optional[float] = None
 
+
 class Asset(AssetBase):
     id: int
     current_price: float
@@ -32,6 +37,7 @@ class Asset(AssetBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 # 資産サマリースキーマ
 class AssetSummary(BaseModel):
     total_value: float
@@ -40,9 +46,11 @@ class AssetSummary(BaseModel):
     total_performance: float
     asset_allocation: List[Dict[str, Any]]
 
+
 class AssetList(BaseModel):
     assets: List[Asset]
     summary: AssetSummary
+
 
 # 価格履歴スキーマ
 class PriceHistoryBase(BaseModel):
@@ -50,8 +58,10 @@ class PriceHistoryBase(BaseModel):
     price: float
     value: float
 
+
 class PriceHistoryCreate(PriceHistoryBase):
     asset_id: int
+
 
 class PriceHistory(PriceHistoryBase):
     id: int
@@ -59,13 +69,16 @@ class PriceHistory(PriceHistoryBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 # 価格更新スキーマ
 class PriceUpdateRequest(BaseModel):
     asset_ids: List[int]
 
+
 class PriceUpdateResponse(BaseModel):
     updated_assets: List[Asset]
     updated_at: datetime
+
 
 # パフォーマンスデータスキーマ
 class PerformanceData(BaseModel):
@@ -73,12 +86,14 @@ class PerformanceData(BaseModel):
     value: float
     change_percent: float
 
+
 class AssetPerformance(BaseModel):
     id: int
     name: str
     ticker: str
     type: str
     performance: List[PerformanceData]
+
 
 class PortfolioPerformance(BaseModel):
     total_performance: List[PerformanceData]
