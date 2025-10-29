@@ -16,9 +16,7 @@ def get_asset(db: Session, asset_id: int) -> Optional[models.Asset]:
     return db.query(models.Asset).filter(models.Asset.id == asset_id).first()
 
 
-def get_assets(
-    db: Session, skip: int = 0, limit: int = 100
-) -> List[models.Asset]:
+def get_assets(db: Session, skip: int = 0, limit: int = 100) -> List[models.Asset]:
     """
     全ての資産を取得します。
     """
@@ -112,9 +110,7 @@ def get_assets_summary(db: Session) -> Dict[str, Any]:
     total_gain_loss = total_value - total_cost
 
     # パフォーマンスの計算（%）
-    total_performance = (
-        (total_gain_loss / total_cost * 100) if total_cost > 0 else 0
-    )
+    total_performance = (total_gain_loss / total_cost * 100) if total_cost > 0 else 0
 
     # 資産配分の計算
     asset_types: Dict[str, float] = {}
@@ -128,9 +124,7 @@ def get_assets_summary(db: Session) -> Dict[str, Any]:
                 asset.current_value  # type: ignore[assignment]
             )
 
-    asset_allocation = [
-        {"type": k, "value": v} for k, v in asset_types.items()
-    ]
+    asset_allocation = [{"type": k, "value": v} for k, v in asset_types.items()]
 
     return {
         "total_value": total_value,
@@ -193,9 +187,7 @@ def update_prices(db: Session, asset_ids: List[int]) -> List[models.Asset]:
 # パフォーマンス分析関連のCRUD操作
 
 
-def get_performance(
-    db: Session, start_date: str, end_date: str
-) -> Dict[str, Any]:
+def get_performance(db: Session, start_date: str, end_date: str) -> Dict[str, Any]:
     """
     指定された期間のパフォーマンスデータを取得します。
     """
@@ -251,13 +243,9 @@ def get_performance(
 
             # 全資産の合計価値を日付ごとに集計
             if date_str in all_values_by_date:
-                all_values_by_date[date_str] += (
-                    ph.value  # type: ignore[assignment]
-                )
+                all_values_by_date[date_str] += ph.value  # type: ignore[assignment]
             else:
-                all_values_by_date[date_str] = (
-                    ph.value  # type: ignore[assignment]
-                )
+                all_values_by_date[date_str] = ph.value  # type: ignore[assignment]
 
         # 資産のパフォーマンスデータを追加
         assets_performance.append(
@@ -281,9 +269,7 @@ def get_performance(
         base_total_value = all_values_by_date[dates[0]]
 
         for date in dates:
-            total_value = (  # type: ignore[assignment]
-                all_values_by_date[date]
-            )
+            total_value = all_values_by_date[date]  # type: ignore[assignment]
             change_percent = (
                 ((total_value / base_total_value) - 1) * 100  # type: ignore[assignment]  # noqa: E501
                 if base_total_value > 0

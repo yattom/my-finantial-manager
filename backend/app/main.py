@@ -143,9 +143,7 @@ def update_prices(
     選択された資産の価格を更新します。
     """
     try:
-        updated_assets = crud.update_prices(
-            db=db, asset_ids=update_request.asset_ids
-        )
+        updated_assets = crud.update_prices(db=db, asset_ids=update_request.asset_ids)
         return {"updated_assets": updated_assets, "updated_at": datetime.now()}
     except SQLAlchemyError as e:
         raise HTTPException(
@@ -185,9 +183,7 @@ def get_performance(
                 detail="開始日は終了日より前である必要があります。",
             )
 
-        return crud.get_performance(
-            db=db, start_date=start_date, end_date=end_date
-        )
+        return crud.get_performance(db=db, start_date=start_date, end_date=end_date)
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
