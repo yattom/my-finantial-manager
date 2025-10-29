@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 import yfinance as yf  # type: ignore[import-untyped]
@@ -187,104 +187,131 @@ def update_prices(db: Session, asset_ids: List[int]) -> List[models.Asset]:
 # パフォーマンス分析関連のCRUD操作
 
 
-def get_performance(db: Session, start_date: str, end_date: str) -> Dict[str, Any]:
-    """
-    指定された期間のパフォーマンスデータを取得します。
-    """
-    # 日付をdatetime型に変換
+def _parse_date_range(start_date: str, end_date: str) -> tuple:
+    """日付文字列をdate型に変換"""
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    return start, end
 
-    # 全ての資産を取得
-    assets = get_assets(db)
 
-    # 各資産のパフォーマンスデータを取得
-    assets_performance: List[Dict[str, Any]] = []
-    all_values_by_date: Dict[str, float] = {}  # 日付ごとの全資産の合計価値
+def _query_price_history(
+    db: Session, asset_id: int, start: date, end: date
+) -> List[models.PriceHistory]:
+    """指定期間の価格履歴を取得"""
+    return (
+        db.query(models.PriceHistory)
+        .filter(
+            models.PriceHistory.asset_id == asset_id,
+            models.PriceHistory.date >= start,
+            models.PriceHistory.date <= end,
+        )  # noqa: E501
+        .order_by(models.PriceHistory.date)
+        .all()
+    )
 
-    for asset in assets:
-        # 価格履歴を取得
-        price_history = (
-            db.query(models.PriceHistory)
-            .filter(
-                models.PriceHistory.asset_id == asset.id,
-                models.PriceHistory.date >= start,
-                models.PriceHistory.date <= end,
-            )
-            .order_by(models.PriceHistory.date)
-            .all()
-        )
 
-        # 価格履歴がない場合はスキップ
-        if not price_history:
-            continue
+def _calculate_change_percent(current_value: float, base_value: float) -> float:
+    """変化率を計算（%）"""
+    if base_value <= 0:
+        return 0
+    return ((current_value / base_value) - 1) * 100
 
-        # 最初の価格を基準にパフォーマンスを計算
-        base_value = price_history[0].value
-        performance_data = []
 
-        for ph in price_history:
-            # 変化率を計算（%）
-            change_percent = (
-                ((ph.value / base_value) - 1) * 100 if base_value > 0 else 0
-            )
+def _create_performance_entry(
+    ph: models.PriceHistory, base_value: float
+) -> Dict[str, Any]:
+    """価格履歴から1つのパフォーマンスエントリを作成"""
+    date_str = ph.date.strftime("%Y-%m-%d")
+    change_percent = _calculate_change_percent(ph.value, base_value)  # type: ignore[arg-type]  # noqa: E501
+    return {"date": date_str, "value": ph.value, "change_percent": change_percent}
 
-            # 日付文字列
-            date_str = ph.date.strftime("%Y-%m-%d")
 
-            # パフォーマンスデータを追加
-            performance_data.append(
-                {
-                    "date": date_str,
-                    "value": ph.value,
-                    "change_percent": change_percent,
-                }
-            )
+def _accumulate_value_by_date(
+    all_values: Dict[str, float], date: str, value: float
+) -> None:  # noqa: E501
+    """日付ごとに価値を集計"""
+    if date in all_values:
+        all_values[date] += value
+    else:
+        all_values[date] = value
 
-            # 全資産の合計価値を日付ごとに集計
-            if date_str in all_values_by_date:
-                all_values_by_date[date_str] += ph.value  # type: ignore[assignment]
-            else:
-                all_values_by_date[date_str] = ph.value  # type: ignore[assignment]
 
-        # 資産のパフォーマンスデータを追加
-        assets_performance.append(
-            {
-                "id": asset.id,
-                "name": asset.name,
-                "ticker": asset.ticker,
-                "type": asset.type,
-                "performance": performance_data,
-            }
-        )
+def _build_performance_data(
+    price_history: List[models.PriceHistory], all_values_by_date: Dict[str, float]
+) -> List[Dict[str, Any]]:  # noqa: E501
+    """価格履歴からパフォーマンスデータを構築"""
+    base_value = price_history[0].value  # type: ignore[arg-type]
+    performance_data = [
+        _create_performance_entry(ph, base_value) for ph in price_history  # type: ignore[arg-type]  # noqa: E501
+    ]  # noqa: E501
+    for ph in price_history:
+        _accumulate_value_by_date(
+            all_values_by_date, ph.date.strftime("%Y-%m-%d"), ph.value  # type: ignore[arg-type]  # noqa: E501
+        )  # noqa: E501
+    return performance_data
 
-    # ポートフォリオ全体のパフォーマンスを計算
-    total_performance = []
 
-    # 日付でソート
+def _build_asset_performance(
+    asset: models.Asset, performance_data: List[Dict[str, Any]]
+) -> Dict[str, Any]:  # noqa: E501
+    """資産のパフォーマンスデータを構築"""
+    return {
+        "id": asset.id,
+        "name": asset.name,
+        "ticker": asset.ticker,
+        "type": asset.type,
+        "performance": performance_data,
+    }  # noqa: E501
+
+
+def _process_asset_performance(
+    db: Session,
+    asset: models.Asset,
+    start: date,
+    end: date,
+    all_values_by_date: Dict[str, float],
+) -> Optional[Dict[str, Any]]:  # noqa: E501
+    """1つの資産のパフォーマンスを処理"""
+    price_history = _query_price_history(db, asset.id, start, end)  # type: ignore[arg-type]  # noqa: E501
+    if not price_history:
+        return None
+    performance_data = _build_performance_data(price_history, all_values_by_date)
+    return _build_asset_performance(asset, performance_data)
+
+
+def _calculate_total_performance(
+    all_values_by_date: Dict[str, float],
+) -> List[Dict[str, Any]]:  # noqa: E501
+    """ポートフォリオ全体のパフォーマンスを計算"""
     dates = sorted(all_values_by_date.keys())
+    if not dates:
+        return []
+    base_total_value = all_values_by_date[dates[0]]
+    return [
+        _create_total_entry(date, all_values_by_date[date], base_total_value)
+        for date in dates
+    ]  # noqa: E501
 
-    if dates:
-        # 最初の合計価値を基準にパフォーマンスを計算
-        base_total_value = all_values_by_date[dates[0]]
 
-        for date in dates:
-            total_value = all_values_by_date[date]  # type: ignore[assignment]
-            change_percent = (
-                ((total_value / base_total_value) - 1) * 100  # type: ignore[assignment]  # noqa: E501
-                if base_total_value > 0
-                else 0
-            )
+def _create_total_entry(
+    date: str, total_value: float, base_value: float
+) -> Dict[str, Any]:  # noqa: E501
+    """全体パフォーマンスのエントリを作成"""
+    change_percent = _calculate_change_percent(total_value, base_value)
+    return {"date": date, "value": total_value, "change_percent": change_percent}
 
-            total_performance.append(
-                {
-                    "date": date,
-                    "value": total_value,
-                    "change_percent": change_percent,
-                }
-            )
 
+def get_performance(db: Session, start_date: str, end_date: str) -> Dict[str, Any]:
+    """指定された期間のパフォーマンスデータを取得"""
+    start, end = _parse_date_range(start_date, end_date)
+    all_values_by_date: Dict[str, float] = {}
+    assets_performance = [
+        p
+        for asset in get_assets(db)
+        if (p := _process_asset_performance(db, asset, start, end, all_values_by_date))
+    ]  # noqa: E501
+    total_performance = _calculate_total_performance(all_values_by_date)
     return {
         "total_performance": total_performance,
         "assets_performance": assets_performance,
-    }
+    }  # noqa: E501
