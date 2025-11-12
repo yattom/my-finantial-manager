@@ -146,3 +146,93 @@ def test_delete_asset(client: TestClient, sample_asset: models.Asset) -> None:
     # 削除後に取得しようとするとエラーになることを確認
     response = client.get(f"/assets/{sample_asset.id}")
     assert response.status_code == 404
+
+
+# パフォーマンス分析用のテストフィクスチャ
+@pytest.fixture
+def sample_asset_with_history(db_session: Session) -> models.Asset:
+    # 資産を作成
+    asset = models.Asset(
+        name="テスト株式",
+        ticker="TEST",
+        type="株式",
+        quantity=100,
+        purchase_price=1000,
+        purchase_date=datetime.date(2024, 1, 1),
+        current_price=1200,
+        current_value=120000,
+        performance=20.0,
+        last_updated=datetime.datetime.now(),
+    )
+    db_session.add(asset)
+    db_session.commit()
+    db_session.refresh(asset)
+
+    # 価格履歴を追加
+    price_histories = [
+        models.PriceHistory(
+            asset_id=asset.id,
+            date=datetime.date(2024, 1, 1),
+            price=1000,
+            value=100000,
+        ),
+        models.PriceHistory(
+            asset_id=asset.id,
+            date=datetime.date(2024, 1, 2),
+            price=1100,
+            value=110000,
+        ),
+        models.PriceHistory(
+            asset_id=asset.id,
+            date=datetime.date(2024, 1, 3),
+            price=1200,
+            value=120000,
+        ),
+    ]
+    for ph in price_histories:
+        db_session.add(ph)
+    db_session.commit()
+
+    return asset
+
+
+# パフォーマンス取得APIのテスト
+def test_get_performance(
+    client: TestClient, sample_asset_with_history: models.Asset
+) -> None:
+    response = client.get(
+        "/performance", params={"start_date": "2024-01-01", "end_date": "2024-01-03"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    # レスポンス構造の確認
+    assert "total_performance" in data
+    assert "assets_performance" in data
+
+    # トータルパフォーマンスの確認
+    assert len(data["total_performance"]) == 3
+    assert data["total_performance"][0]["date"] == "2024-01-01"
+    assert data["total_performance"][0]["value"] == 100000
+    assert data["total_performance"][0]["change_percent"] == 0.0
+    assert abs(data["total_performance"][2]["change_percent"] - 20.0) < 0.01
+
+    # 資産パフォーマンスの確認
+    assert len(data["assets_performance"]) == 1
+    assert data["assets_performance"][0]["id"] == sample_asset_with_history.id
+    assert len(data["assets_performance"][0]["performance"]) == 3
+
+
+# 空の期間でのパフォーマンス取得テスト
+def test_get_performance_empty_period(
+    client: TestClient, sample_asset_with_history: models.Asset
+) -> None:
+    response = client.get(
+        "/performance", params={"start_date": "2023-01-01", "end_date": "2023-12-31"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    # データがない期間の場合は空の配列が返る
+    assert data["total_performance"] == []
+    assert data["assets_performance"] == []
